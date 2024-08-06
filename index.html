@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Codes</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>OTP Codes</h2>
+    <table id="otpTable">
+        <thead>
+            <tr>
+                <th>Phone</th>
+                <th>OTP Code</th>
+                <th>Expire Time</th>
+            </tr>
+        </thead>
+        <tbody id="otpTableBody"></tbody>
+    </table>
+
+    <script>
+        function decodeUnicode(str) {
+            return str.replace(/\\u[\dA-F]{4}/gi, match =>
+                String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16))
+            );
+        }
+
+        async function fetchDataFromYandex() {
+            try {
+                const response = await fetch('https://functions.yandexcloud.net/d4ep5f6v7bc81qhur4ms?integration=raw', {
+                    method: 'POST',
+                    headers: {
+                    },
+                    body: JSON.stringify({
+                        method: 'GET_OTP_CODES'
+                    })
+                });
+                const data = await response.json();
+                return JSON.parse(decodeUnicode(data.body));
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
+        }
+
+        async function fetchDataFromCustomServer() {
+            try {
+                const response = await fetch('https://gamesrtkbd.tech/otptest/get-otp-codes', {
+                    method: 'GET'
+                });
+                const data = await response.json();
+                return JSON.parse(decodeUnicode(data));
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
+        }
+
+        async function renderOTPTable() {
+            const otpTableBody = document.getElementById('otpTableBody');
+            otpTableBody.innerHTML = '';
+
+            createRow(await fetchDataFromYandex(), otpTableBody);
+            createRow(await fetchDataFromCustomServer(), otpTableBody);
+        }
+
+        async function createRow(optData, otpTableBody) {
+            optData.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                        <td>${entry.phone}</td>
+                        <td>${entry.otp_code}</td>
+                        <td>${new Date(entry.expire_time).toLocaleString()}</td>
+                    `;
+                otpTableBody.appendChild(row);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', renderOTPTable);
+    </script>
+</body>
+</html>
